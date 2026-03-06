@@ -190,6 +190,39 @@ docker compose up -d --build
 
 If `.env` is not present, `docker-compose.yml` still works with its built-in defaults.
 
+## Git Clone to Run
+
+For an operator server, the shortest path is:
+
+```bash
+git clone https://github.com/DeclanJeon/Grid-Control-Plane.git
+cd Grid-Control-Plane
+./scripts/deploy-compose.sh
+```
+
+What the script does:
+
+- creates `.env` from `.env.example` on first run
+- generates a random `CONTROL_AUTH_TOKEN`
+- runs `docker compose up -d --build`
+- waits for `/health` and `/v1/admin/runtime/readiness`
+- exits only when `ready_for_production: true`
+
+By default, the generated `.env` keeps the compose-local PostgreSQL credentials from `.env.example` and randomizes the API auth token for the operator service.
+
+Useful follow-up commands:
+
+```bash
+# stop the stack
+./scripts/compose-down.sh
+
+# stop and remove volumes
+./scripts/compose-down.sh -v
+
+# inspect generated secrets
+cat .env
+```
+
 Verify the stack:
 
 ```bash
