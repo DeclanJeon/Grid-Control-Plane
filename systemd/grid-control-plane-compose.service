@@ -1,0 +1,18 @@
+[Unit]
+Description=Grid Control Plane Docker Compose Stack
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=__SERVICE_USER__
+WorkingDirectory=__WORKING_DIRECTORY__
+ExecStart=/usr/bin/env bash -lc './scripts/deploy-compose.sh'
+ExecStop=/usr/bin/env bash -lc './scripts/compose-down.sh'
+TimeoutStartSec=180
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target
