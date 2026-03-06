@@ -172,6 +172,46 @@ docker run --rm -p 19090:19090 \
 
 Use `.env.example` as the baseline for the runtime environment passed into the container.
 
+## Docker Compose Deployment
+
+This repository also includes `docker-compose.yml` for a full local operator stack:
+
+- `control-plane`
+- `postgres`
+- `redis`
+
+Quick start:
+
+```bash
+# optional: customize values first
+cp .env.example .env
+docker compose up -d --build
+```
+
+If `.env` is not present, `docker-compose.yml` still works with its built-in defaults.
+
+Verify the stack:
+
+```bash
+curl http://127.0.0.1:19090/health
+curl \
+  -H "Authorization: Bearer replace-with-strong-token" \
+  -H "x-grid-role: admin" \
+  http://127.0.0.1:19090/v1/admin/runtime/readiness
+```
+
+Stop the stack:
+
+```bash
+docker compose down
+```
+
+Remove the stack with persisted volumes:
+
+```bash
+docker compose down -v
+```
+
 ## Environment Variables
 
 Use `.env.example` as the starting template for operator deployment.
