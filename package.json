@@ -1,0 +1,33 @@
+{
+  "name": "grid-control-plane",
+  "version": "0.1.0",
+  "description": "Operator-side control-plane for presence, trust, sessions, ledger rollups, and backend readiness in the Broker Peer Grid.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node ./server.mjs",
+    "test": "node --test",
+    "verify:real-backends": "node ./scripts/verify-real-backends.mjs",
+    "verify:real-backends:load": "node ./scripts/verify-real-backends-load.mjs",
+    "verify:real-backends:faults": "node ./scripts/verify-real-backends-faults.mjs",
+    "verify:real-backends:wan": "node ./scripts/verify-real-backends-wan.mjs",
+    "verify:real-backends:wan-hardfail": "node ./scripts/verify-real-backends-wan-hardfail.mjs",
+    "verify:real-backends:wan-matrix": "node ./scripts/verify-real-backends-wan-matrix.mjs",
+    "verify:real-backends:wan-burst": "node ./scripts/verify-real-backends-wan-burst.mjs",
+    "verify:real-backends:wan-loss": "node ./scripts/verify-real-backends-wan-loss.mjs",
+    "verify:real-backends:queue-state": "node ./scripts/verify-real-backends-queue-state.mjs",
+    "verify:real-backends:soak": "node ./scripts/verify-real-backends-soak.mjs",
+    "verify:real-backends:restart-midrun": "node ./scripts/verify-real-backends-restart-midrun.mjs",
+    "verify:real-backends:concurrency-sweep": "node ./scripts/verify-real-backends-concurrency-sweep.mjs",
+    "verify:real-backends:chaos-combo": "node ./scripts/verify-real-backends-chaos-combo.mjs",
+    "verify:real-backends:chaos-campaign": "node ./scripts/verify-real-backends-chaos-campaign.mjs",
+    "verify:bullmq:job-state-boundaries": "node ./scripts/verify-bullmq-job-state-boundaries.mjs",
+    "verify:resilience:marathon": "node ./scripts/verify-resilience-marathon.mjs",
+    "verify:resilience:marathon-wan": "node ./scripts/verify-resilience-marathon-wan.mjs"
+  },
+  "dependencies": {
+    "bullmq": "^5.63.0",
+    "ioredis": "^5.8.1",
+    "pg": "^8.16.3"
+  }
+}
