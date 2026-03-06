@@ -204,11 +204,12 @@ What the script does:
 
 - creates `.env` from `.env.example` on first run
 - generates a random `CONTROL_AUTH_TOKEN`
+- generates a random `POSTGRES_PASSWORD` and matching `CONTROL_PG_DSN` on a truly fresh bootstrap
 - runs `docker compose up -d --build`
 - waits for `/health` and `/v1/admin/runtime/readiness`
 - exits only when `ready_for_production: true`
 
-By default, the generated `.env` keeps the compose-local PostgreSQL credentials from `.env.example` and randomizes the API auth token for the operator service.
+If an existing PostgreSQL volume is already present, the script keeps the database credentials in `.env` compatible with that volume and prints a warning if the template password is still in use.
 
 Useful follow-up commands:
 
