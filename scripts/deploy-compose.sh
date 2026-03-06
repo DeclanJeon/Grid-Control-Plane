@@ -4,6 +4,8 @@ set -euo pipefail
 ROOT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 ENV_EXAMPLE="$ROOT_DIR/.env.example"
 ENV_FILE="$ROOT_DIR/.env"
+PROJECT_NAME=$(basename "$ROOT_DIR")
+POSTGRES_VOLUME_NAME="${PROJECT_NAME}_postgres-data"
 
 random_value() {
   if command -v openssl >/dev/null 2>&1; then
@@ -48,11 +50,9 @@ if [ ! -f "$ENV_FILE" ]; then
   cp "$ENV_EXAMPLE" "$ENV_FILE"
 
   auth_token=$(random_value)
-  postgres_volume=$(docker compose config --volumes 2>/dev/null | grep 'postgres-data' | head -n 1 || true)
-
   replace_env_value "CONTROL_AUTH_TOKEN" "$auth_token"
 
-  if [ -n "$postgres_volume" ] && docker volume inspect "$postgres_volume" >/dev/null 2>&1; then
+  if docker volume inspect "$POSTGRES_VOLUME_NAME" >/dev/null 2>&1; then
     printf 'Existing PostgreSQL volume detected; keeping template database credentials for compatibility.\n'
   else
     postgres_password=$(random_value)
@@ -61,7 +61,29 @@ if [ ! -f "$ENV_FILE" ]; then
   fi
 fi
 
+chmod 600 "$ENV_FILE"
+
 cd "$ROOT_DIR"
+if docker volume inspect "$POSTGRES_VOLUME_NAME" >/dev/null 2>&1; then
+  if python3 - <<'PY'
+from pathlib import Path
+vals = {}
+for line in Path('.env').read_text(encoding='utf-8').splitlines():
+    if '=' in line and not line.startswith('#'):
+        k, v = line.split('=', 1)
+        vals[k] = v
+raise SystemExit(0 if vals.get('POSTGRES_PASSWORD') == 'grid' else 1)
+PY
+  then
+    if [ "${ALLOW_INSECURE_DEFAULT_DB_CREDS:-0}" != "1" ]; then
+      printf 'Refusing to start: existing PostgreSQL volume detected while .env still uses the template database password.\n' >&2
+      printf 'Rotate POSTGRES_PASSWORD and CONTROL_PG_DSN first, or rerun with ALLOW_INSECURE_DEFAULT_DB_CREDS=1 if this is intentional.\n' >&2
+      exit 1
+    fi
+    printf 'Warning: proceeding with template PostgreSQL credentials because ALLOW_INSECURE_DEFAULT_DB_CREDS=1 was set.\n'
+  fi
+fi
+
 docker compose up -d --build
 
 auth_token=$(python3 - <<'PY'
