@@ -135,6 +135,43 @@ Expected production-style result:
 - no `storage_not_externalized`
 - no `queue_not_externalized`
 
+## CI
+
+GitHub Actions workflow:
+
+- `.github/workflows/ci.yml`
+
+It runs:
+
+- `npm ci`
+- `npm test`
+
+on both pushes to `main` and pull requests.
+
+## Docker Deployment
+
+This repository includes a production-oriented `Dockerfile` for the control-plane service.
+
+Build the image:
+
+```bash
+docker build -t grid-control-plane:latest .
+```
+
+Run the container:
+
+```bash
+docker run --rm -p 19090:19090 \
+  -e CONTROL_AUTH_TOKEN=replace-with-strong-token \
+  -e CONTROL_STORAGE_BACKEND=postgres \
+  -e CONTROL_PG_DSN='postgres://USER:PASSWORD@POSTGRES_HOST:5432/DBNAME' \
+  -e CONTROL_QUEUE_BACKEND=redis_bullmq \
+  -e CONTROL_REDIS_URL='redis://REDIS_HOST:6379' \
+  grid-control-plane:latest
+```
+
+Use `.env.example` as the baseline for the runtime environment passed into the container.
+
 ## Environment Variables
 
 Use `.env.example` as the starting template for operator deployment.

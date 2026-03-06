@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+.git
+.github
+test
+scripts
+control-plane-data.json
+control-plane-data.json.*
+*.ledger-journal
+*.log
+*.pid
+*.tmp
+.env
+.env.*
