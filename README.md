@@ -137,6 +137,8 @@ Expected production-style result:
 
 ## Environment Variables
 
+Use `.env.example` as the starting template for operator deployment.
+
 Core settings:
 
 - `CONTROL_HOST`
