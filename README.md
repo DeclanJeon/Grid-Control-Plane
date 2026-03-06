@@ -25,6 +25,11 @@ It provides:
 
 In the current release model, this service is deployed separately from the desktop app.
 
+## Key Documents
+
+- deployment readiness report: `docs/deployment-readiness-report.md`
+- operator runbook: `docs/operator-runbook.md`
+
 ## Runtime Model
 
 The service starts as a Node.js HTTP server from `server.mjs`.
