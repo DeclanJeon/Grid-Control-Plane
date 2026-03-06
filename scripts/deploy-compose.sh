@@ -48,8 +48,17 @@ if [ ! -f "$ENV_FILE" ]; then
   cp "$ENV_EXAMPLE" "$ENV_FILE"
 
   auth_token=$(random_value)
+  postgres_volume=$(docker compose config --volumes 2>/dev/null | grep 'postgres-data' | head -n 1 || true)
 
   replace_env_value "CONTROL_AUTH_TOKEN" "$auth_token"
+
+  if [ -n "$postgres_volume" ] && docker volume inspect "$postgres_volume" >/dev/null 2>&1; then
+    printf 'Existing PostgreSQL volume detected; keeping template database credentials for compatibility.\n'
+  else
+    postgres_password=$(random_value)
+    replace_env_value "POSTGRES_PASSWORD" "$postgres_password"
+    replace_env_value "CONTROL_PG_DSN" "postgres://grid:${postgres_password}@postgres:5432/grid"
+  fi
 fi
 
 cd "$ROOT_DIR"
@@ -80,6 +89,18 @@ PY
     then
       printf 'Deployment ready\n'
       printf '%s\n' "$readiness_json"
+      if python3 - <<'PY'
+from pathlib import Path
+vals = {}
+for line in Path('.env').read_text(encoding='utf-8').splitlines():
+    if '=' in line and not line.startswith('#'):
+        k, v = line.split('=', 1)
+        vals[k] = v
+raise SystemExit(0 if vals.get('POSTGRES_PASSWORD') == 'grid' else 1)
+PY
+      then
+        printf 'Warning: PostgreSQL password is still using the template value from .env. Rotate it before exposing this host beyond a trusted network.\n'
+      fi
       exit 0
     fi
   fi
