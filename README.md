@@ -235,9 +235,18 @@ cat .env
 Verify the stack:
 
 ```bash
+CONTROL_AUTH_TOKEN=$(python3 - <<'PY'
+from pathlib import Path
+for line in Path('.env').read_text(encoding='utf-8').splitlines():
+    if line.startswith('CONTROL_AUTH_TOKEN='):
+        print(line.split('=', 1)[1])
+        break
+PY
+)
+
 curl http://127.0.0.1:19090/health
 curl \
-  -H "Authorization: Bearer replace-with-strong-token" \
+  -H "Authorization: Bearer ${CONTROL_AUTH_TOKEN}" \
   -H "x-grid-role: admin" \
   http://127.0.0.1:19090/v1/admin/runtime/readiness
 ```
@@ -252,6 +261,33 @@ Remove the stack with persisted volumes:
 
 ```bash
 docker compose down -v
+```
+
+## Systemd Auto-Start
+
+If you want the stack to restart automatically after server reboot:
+
+```bash
+./scripts/install-systemd.sh
+```
+
+This installs `grid-control-plane-compose.service` into `/etc/systemd/system/`, enables it, and starts it immediately.
+
+Useful options:
+
+```bash
+# preview the rendered unit without installing it
+./scripts/install-systemd.sh --print-only
+
+# install for a different service user or checkout path
+SERVICE_USER=ubuntu WORKING_DIRECTORY=/opt/Grid-Control-Plane ./scripts/install-systemd.sh
+```
+
+Manual systemd checks:
+
+```bash
+sudo systemctl status grid-control-plane-compose.service
+sudo journalctl -u grid-control-plane-compose.service -n 200 --no-pager
 ```
 
 ## Environment Variables
