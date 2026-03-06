@@ -197,6 +197,7 @@ For an operator server, the shortest path is:
 ```bash
 git clone https://github.com/DeclanJeon/Grid-Control-Plane.git
 cd Grid-Control-Plane
+./scripts/preflight.sh
 ./scripts/deploy-compose.sh
 ```
 
@@ -231,6 +232,56 @@ Useful follow-up commands:
 # inspect generated secrets
 cat .env
 ```
+
+## Server Preflight
+
+Run this before the first deployment on an operator server:
+
+```bash
+./scripts/preflight.sh
+```
+
+It checks:
+
+- Docker CLI and Docker daemon access
+- Docker Compose availability
+- `python3`, `curl`, and `systemctl`
+- required deployment files and executable scripts
+- whether the target TCP port is already in use
+- whether an existing `.env` file has secure permissions
+
+## Deployment Rehearsal
+
+Recommended rehearsal on a new server:
+
+```bash
+git clone https://github.com/DeclanJeon/Grid-Control-Plane.git
+cd Grid-Control-Plane
+./scripts/preflight.sh
+./scripts/deploy-compose.sh
+
+CONTROL_AUTH_TOKEN=$(python3 - <<'PY'
+from pathlib import Path
+for line in Path('.env').read_text(encoding='utf-8').splitlines():
+    if line.startswith('CONTROL_AUTH_TOKEN='):
+        print(line.split('=', 1)[1])
+        break
+PY
+)
+
+curl http://127.0.0.1:19090/health
+curl \
+  -H "Authorization: Bearer ${CONTROL_AUTH_TOKEN}" \
+  -H "x-grid-role: admin" \
+  http://127.0.0.1:19090/v1/admin/runtime/readiness
+./scripts/install-systemd.sh --print-only
+```
+
+Expected rehearsal result:
+
+- preflight reports no blocking issues
+- deployment reaches `ready_for_production: true`
+- systemd unit renders cleanly
 
 Verify the stack:
 
