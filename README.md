@@ -211,6 +211,14 @@ What the script does:
 
 If an existing PostgreSQL volume is already present, the script keeps the database credentials in `.env` compatible with that volume and prints a warning if the template password is still in use.
 
+The script also locks down `.env` permissions with `chmod 600`.
+
+If an existing PostgreSQL volume is present and `.env` still uses the template database password, the script now fails closed by default. To intentionally continue with those credentials, set:
+
+```bash
+ALLOW_INSECURE_DEFAULT_DB_CREDS=1 ./scripts/deploy-compose.sh
+```
+
 Useful follow-up commands:
 
 ```bash
