@@ -1,0 +1,200 @@
+# Grid Control Plane
+
+Operator-side control-plane service for presence, trust, sessions, ledger rollups, and backend readiness in the Broker Peer Grid.
+
+## Project Title
+
+- `Grid Control Plane`
+
+## Project Description
+
+- `Operator-side control-plane service for presence, trust, sessions, ledger rollups, and backend readiness in the Broker Peer Grid.`
+
+## What It Does
+
+`apps/control-plane` is the central operator service that sits beside the desktop clients and supports multi-node coordination.
+
+It provides:
+
+- presence registration and snapshot APIs
+- file registration and listing APIs
+- session creation and recovery-state tracking
+- trust attestation and file trust scoring
+- ledger event ingestion and rollup summaries
+- backend status and production-readiness inspection
+
+In the current release model, this service is deployed separately from the desktop app.
+
+## Runtime Model
+
+The service starts as a Node.js HTTP server from `server.mjs`.
+
+Default local mode:
+
+- storage: `file`
+- queue: `inline`
+- host: `127.0.0.1`
+- port: `19090`
+
+Production-style mode:
+
+- storage: `postgres`
+- queue: `redis_bullmq`
+
+## API Highlights
+
+Health and admin:
+
+- `GET /health`
+- `GET /v1/admin/runtime/backends`
+- `GET /v1/admin/runtime/readiness`
+- `GET /v1/admin/ledger/rollups`
+- `GET /v1/admin/audit`
+
+Presence and transfer coordination:
+
+- `POST /v1/presence/sync`
+- `GET /v1/presence/snapshot`
+- `POST /v1/files/register`
+- `GET /v1/files`
+- `POST /v1/sessions/create`
+- `GET /v1/sessions`
+
+Trust and ledger:
+
+- `POST /v1/trust/attest`
+- `GET /v1/trust/file/:file_id`
+- `POST /v1/ledger/events`
+- `POST /v1/ledger/events/batch`
+- `GET /v1/ledger/summary`
+
+## Local Development
+
+Install and run:
+
+```bash
+cd apps/control-plane
+npm install
+CONTROL_AUTH_TOKEN=dev-local-token npm run start
+```
+
+Health check:
+
+```bash
+curl http://127.0.0.1:19090/health
+```
+
+Readiness check:
+
+```bash
+curl \
+  -H "Authorization: Bearer dev-local-token" \
+  -H "x-grid-role: admin" \
+  http://127.0.0.1:19090/v1/admin/runtime/readiness
+```
+
+Expected local result:
+
+- server is healthy
+- `ready_for_production` may still be `false` in file/inline mode
+
+## Operator Deployment
+
+For an operator server, use externalized backends.
+
+```bash
+cd apps/control-plane
+npm install
+
+export CONTROL_HOST=0.0.0.0
+export CONTROL_PORT=19090
+export CONTROL_AUTH_TOKEN=replace-with-strong-token
+export CONTROL_STORAGE_BACKEND=postgres
+export CONTROL_PG_DSN='postgres://USER:PASSWORD@POSTGRES_HOST:5432/DBNAME'
+export CONTROL_PG_TABLE=control_plane_state
+export CONTROL_QUEUE_BACKEND=redis_bullmq
+export CONTROL_REDIS_URL='redis://REDIS_HOST:6379'
+export CONTROL_BULLMQ_QUEUE=grid-ledger-events
+
+npm run start
+```
+
+Recommended operator verification:
+
+```bash
+curl http://SERVER_IP:19090/health
+curl \
+  -H "Authorization: Bearer replace-with-strong-token" \
+  -H "x-grid-role: admin" \
+  http://SERVER_IP:19090/v1/admin/runtime/readiness
+```
+
+Expected production-style result:
+
+- `ready_for_production: true`
+- no `storage_not_externalized`
+- no `queue_not_externalized`
+
+## Environment Variables
+
+Core settings:
+
+- `CONTROL_HOST`
+- `CONTROL_PORT`
+- `CONTROL_AUTH_TOKEN`
+- `CONTROL_DATA_FILE`
+
+Storage backend:
+
+- `CONTROL_STORAGE_BACKEND`
+- `CONTROL_PG_DSN`
+- `CONTROL_PG_TABLE`
+
+Queue backend:
+
+- `CONTROL_QUEUE_BACKEND`
+- `CONTROL_QUEUE_JOURNAL_FILE`
+- `CONTROL_REDIS_URL`
+- `CONTROL_BULLMQ_QUEUE`
+- `CONTROL_BULLMQ_WORKER_CONCURRENCY`
+
+Tuning:
+
+- `PRESENCE_TTL_SECONDS`
+- `RATE_LIMIT_WINDOW_MS`
+- `RATE_LIMIT_MAX`
+- `LEDGER_DECAY_ALPHA`
+- `MESSAGE_COOLDOWN_MS`
+- `SESSION_PATH_EMA_ALPHA`
+
+## Test Commands
+
+Basic tests:
+
+```bash
+npm test
+```
+
+Real-backend verification examples:
+
+```bash
+npm run verify:real-backends
+npm run verify:real-backends:load
+npm run verify:real-backends:faults
+npm run verify:real-backends:wan
+npm run verify:real-backends:wan-loss
+npm run verify:real-backends:queue-state
+npm run verify:resilience:marathon
+```
+
+## Current Deployment Position
+
+- desktop app users install a single Tauri app
+- operators separately deploy `Grid Control Plane`
+- two-laptop testing should connect both desktops to this service running on the operator server
+
+## Related Documents
+
+- `../../report/2603061720_integrated_test_plan_cases_scenarios.md`
+- `../../report/2603061805_local_test_execution_report.md`
+- `../../report/2603061823_release_composition_and_deployment_runbook.md`

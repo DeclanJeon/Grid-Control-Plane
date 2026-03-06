@@ -1,0 +1,17 @@
+node_modules/
+
+control-plane-data.json
+control-plane-data.json.*
+*.ledger-journal
+
+.env
+.env.*
+!.env.example
+!.env.sample
+
+*.log
+*.pid
+*.tmp
+
+.DS_Store
+Thumbs.db
