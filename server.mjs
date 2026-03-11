@@ -373,8 +373,36 @@ async function readJson(req) {
 }
 
 function sendJson(res, statusCode, payload) {
-  res.writeHead(statusCode, { "content-type": "application/json; charset=utf-8" });
+  res.writeHead(statusCode, {
+    ...corsHeaders(res.req),
+    "content-type": "application/json; charset=utf-8",
+  });
   res.end(JSON.stringify(payload));
+}
+
+function allowedOrigin(origin) {
+  const value = String(origin || "").trim();
+  if (!value) return "";
+  if (value === "http://tauri.localhost" || value === "tauri://localhost") {
+    return value;
+  }
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(value)) {
+    return value;
+  }
+  return "";
+}
+
+function corsHeaders(req) {
+  const origin = allowedOrigin(req?.headers?.origin);
+  const headers = {
+    Vary: "Origin",
+  };
+  if (origin) {
+    headers["Access-Control-Allow-Origin"] = origin;
+    headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, X-Grid-Role, X-Grid-Token";
+    headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS";
+  }
+  return headers;
 }
 
 function clientIp(req) {
@@ -953,6 +981,12 @@ await loadState();
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://${req.headers.host || "127.0.0.1"}`);
+
+  if (req.method === "OPTIONS") {
+    res.writeHead(204, corsHeaders(req));
+    res.end();
+    return;
+  }
 
   if (!checkRateLimit(req)) {
     addAudit({ method: req.method, path: url.pathname, result: "rate_limited", ip: clientIp(req) });
